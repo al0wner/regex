@@ -162,9 +162,9 @@ struct header_t {
 	hashstage_h hash_stage;
 	ipv4_h ipv4;
 	validation_h validation;
-        revf_t[MAX_REVF_LENGTH] revfs;
-        path_meta_t pathmeta;
-        path_t[MAX_PATH_LENGTH] path;
+    revf_t[MAX_REVF_LENGTH] revfs;
+    path_meta_t pathmeta;
+    path_t[MAX_PATH_LENGTH] path;
 	tcp_h tcp;
 	udp_h udp;    
 }
@@ -187,10 +187,10 @@ struct ig_metadata_t {
 	bit<1> rnd_bit;
 	sip_tmp_h sip_tmp;
 	bit<KEY_LENGTH> key;
-        bit<REVF_LENGTH> revf_prime;
-        bit<TRANS_ID_BITS> trans_id;
-        bit<8> revf_remaining;
-        bit<8> path_remaining;
+    bit<REVF_LENGTH> revf_prime;
+    bit<TRANS_ID_BITS> trans_id;
+    bit<8> revf_remaining;
+    bit<8> path_remaining;
 }
 
 struct eg_metadata_t {
@@ -847,6 +847,23 @@ control SwitchIngress(
 		routing_decision();
 	}
 
+	action set_m01() {
+		hdr.sip.m_0 = hdr.validation.svf;
+		hdr.sip.m_1 = hdr.validation.datahash;
+		hdr.sip.m_2 = 0;
+		hdr.sip.m_2[31:24] = ig_md.trans_id;
+		hdr.sip.m_3 = 0;
+	}
+
+	action set_m2_1() {
+		
+	} 
+
+	action set_m3(){
+		
+	}
+
+
 	apply {
 		  
 		if (!hdr.whattodo.isValid()){
@@ -859,16 +876,19 @@ control SwitchIngress(
 		if (hdr.whattodo.case_num == 1){
 		// call DFA table
 		    dfa_trans.apply();
-		    bit<56> padding = 0;
+		    //bit<56> padding = 0;
 		    hdr.sip.setValid();
-		    bit<128> temp = hdr.validation.svf++hdr.validation.datahash++ig_md.trans_id++padding; //++ timestamp or whatever source sends
+		    //bit<128> temp = hdr.validation.svf++hdr.validation.datahash++ig_md.trans_id++padding; //++ timestamp or whatever source sends
 		    
 		    // turn these into automated so that changing hash input length doesn't change these assignments
-		    hdr.sip.m_0 = temp[127:96];
-		    hdr.sip.m_1 = temp[95:64];
-		    hdr.sip.m_2 = temp[63:32];
-		    hdr.sip.m_3 = temp[31:0];
-		    
+		    // hdr.sip.m_0 = temp[127:96];
+			set_m01();
+			// set_m2_1();
+			// set_m3();
+
+			
+
+
 		    hdr.hash_stage.setValid();
 		    hdr.hash_stage.stage_num = 1;
 		    hdr.udp.dst_port = SIP_PORT+1;
@@ -960,14 +980,18 @@ control SwitchIngress(
                             drop();
                    
                         else {
+							/*
                             bit<96> padding = 0;
-		            bit<128> temp = hdr.validation.svf++padding; 
-		    
-		            // turn these into automated so that changing hash input length doesn't change these assignments
-		            hdr.sip.m_0 = temp[127:96];
-		            hdr.sip.m_1 = temp[95:64];
-		            hdr.sip.m_2 = temp[63:32];
-		            hdr.sip.m_3 = temp[31:0];
+							bit<128> temp = hdr.validation.svf++padding; 
+					
+							// turn these into automated so that changing hash input length doesn't change these assignments
+							hdr.sip.m_0 = temp[127:96];
+							hdr.sip.m_1 = temp[95:64];
+							hdr.sip.m_2 = temp[63:32];
+							hdr.sip.m_3 = temp[31:0];
+							*/
+
+							hdr.sip.m_0 = hdr.validation.svf;
 		            
                             hdr.hash_stage.stage_num = 2;
                             hdr.whattodo.case_num = 2;
@@ -1276,14 +1300,14 @@ control SwitchEgress(
                             drop();
                    
                         else {
-                            bit<96> padding = 0;
-		            bit<128> temp = hdr.validation.svf++padding; 
+                    // bit<96> padding = 0;
+		            // bit<128> temp = hdr.validation.svf++padding; 
 		    
 		            // turn these into automated so that changing hash input length doesn't change these assignments
-		            hdr.sip.m_0 = temp[127:96];
-		            hdr.sip.m_1 = temp[95:64];
-		            hdr.sip.m_2 = temp[63:32];
-		            hdr.sip.m_3 = temp[31:0];
+		            hdr.sip.m_0 = hdr.validation.svf;
+		            hdr.sip.m_1 = 0;
+		            hdr.sip.m_2 = 0;
+		            hdr.sip.m_3 = 0;
 		            
                             hdr.hash_stage.stage_num = 2;
                             hdr.whattodo.case_num = 2;
@@ -1321,3 +1345,4 @@ Pipeline(SwitchIngressParser(),
 	) pipe;
 
 Switch(pipe) main;
+
