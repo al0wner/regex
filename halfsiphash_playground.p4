@@ -850,17 +850,24 @@ control SwitchIngress(
 	action set_m01() {
 		hdr.sip.m_0 = hdr.validation.svf;
 		hdr.sip.m_1 = hdr.validation.datahash;
-		hdr.sip.m_2 = 0;
-		hdr.sip.m_2[31:24] = ig_md.trans_id;
-		hdr.sip.m_3 = 0;
 	}
-
 	action set_m2_1() {
-		
+		hdr.sip.m_2[31:27] = ig_md.trans_id[7:3];
 	} 
 
+	action set_m2_2() {
+		hdr.sip.m_2[26:25] = ig_md.trans_id[2:1];
+	}
+
+	action set_m2_3() {
+		hdr.sip.m_2[24:24] = ig_md.trans_id[0:0];
+	}
+	
+	action set_m2_4() {
+		hdr.sip.m_2[23:0] = 0;
+	}
 	action set_m3(){
-		
+		hdr.sip.m_3 = 0;
 	}
 
 
@@ -883,8 +890,11 @@ control SwitchIngress(
 		    // turn these into automated so that changing hash input length doesn't change these assignments
 		    // hdr.sip.m_0 = temp[127:96];
 			set_m01();
-			// set_m2_1();
-			// set_m3();
+			set_m2_1();
+			set_m2_2();
+			set_m2_3();
+			set_m2_4();
+			set_m3();
 
 			
 
