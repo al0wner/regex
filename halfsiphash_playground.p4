@@ -35,7 +35,7 @@
 #define SVF_LENGTH 32
 #define REVF_LENGTH 32
 #define KEY_LENGTH 32
-#define TRANS_ID_BITS 8
+#define TRANS_ID_BITS 32
 #define DFA_STATE_BITS 8
 #define DATAHASH_LENGTH 32
 #define TRANS_LENGTH 32
@@ -185,6 +185,7 @@ struct ig_metadata_t {
 	bool recirc;
 	bit<9> rnd_port_for_recirc;
 	bit<1> rnd_bit;
+	bit<5> pad;
 	sip_tmp_h sip_tmp;
 	bit<KEY_LENGTH> key;
     bit<REVF_LENGTH> revf_prime;
@@ -196,10 +197,10 @@ struct ig_metadata_t {
 struct eg_metadata_t {
 	sip_tmp_h sip_tmp;
 	bit<KEY_LENGTH> key;
-        bit<REVF_LENGTH> revf_prime;
-        bit<TRANS_ID_BITS> trans_id;
-        bit<8> revf_remaining;
-        bit<8> path_remaining;
+    bit<REVF_LENGTH> revf_prime;
+    bit<TRANS_ID_BITS> trans_id;
+    bit<8> revf_remaining;
+    bit<8> path_remaining;
 }
 
 parser TofinoIngressParser(
@@ -1013,10 +1014,10 @@ control SwitchIngress(
 		        hdr.validation.svf = hdr.sip.m_0;
 		        
 		        hdr.path.push_front(1);
-                        hdr.path[0].setValid();
-                        hdr.path[0].transition_id = ig_md.trans_id;
-                        hdr.pathmeta.path_length = hdr.pathmeta.path_length+1;
-                        hdr.ipv4.total_len = hdr.ipv4.total_len+1;
+                hdr.path[0].setValid();
+                hdr.path[0].transition_id = ig_md.trans_id;
+                hdr.pathmeta.path_length = hdr.pathmeta.path_length+1;
+                hdr.ipv4.total_len = hdr.ipv4.total_len+1;
 		        
 		        hdr.udp.dst_port = SIP_PORT;
 		        hdr.whattodo.setInvalid();
@@ -1355,4 +1356,3 @@ Pipeline(SwitchIngressParser(),
 	) pipe;
 
 Switch(pipe) main;
-
