@@ -49,6 +49,7 @@
 #define TYPE_IPV4 0x800
 #define VALIDATION_PROTO 0xF0
 #define SIP_PROTO 0xF1
+#define SIP_2_PROTO 0xF2
 
 #define ROUND_TYPE_COMPRESSION 0
 #define ROUND_TYPE_FINALIZATION 1
@@ -194,8 +195,11 @@ parser SwitchIngressParser(
 		out header_t hdr,
 		out ig_metadata_t ig_md,
 		out ingress_intrinsic_metadata_t ig_intr_md) {
+	
+	TofinoIngressParser() tofino_parser;
 
     state start {
+		tofino_parser.apply(pkt, ig_md, ig_intr_md);
         transition parse_ethernet;
     }
 
@@ -212,7 +216,7 @@ parser SwitchIngressParser(
         
         transition select(hdr.ipv4.protocol) {
             VALIDATION_PROTO: parse_validation;
-			SIP_PROTO: parse_sip;
+			SIP_2_PROTO: parse_sip;
             default: accept;
             
         }
@@ -395,10 +399,31 @@ control SwitchIngress(
         default_action = NoAction();
     }
 
+	action send_to_hash(bit<9> eg_port) {
+		hdr.sip.setValid();
+		hdr.sip.svf = hdr.validation.svf;
+		hdr.sip.datahash = hdr.validation.datahash;
+		hdr.sip.trans_id = ig_md.trans_id;
+		hdr.sip.timestamp = ig_intr_md.ingress_mac_tstamp;
+		ig_intr_tm_md.ucast_egress_port = eg_port;
+	}
+
+	table to_hash {
+		key = {}
+		actions = {
+			send_to_hash;
+		}
+		size = 1;
+		default_action = send_to_hash(20);
+	}
+
 
 	apply {
+		// if the packet came back after hashing
 		if (hdr.sip.isValid()) {
 			
+			//TODO: extend this to cover longer path length
+
 			if (hdr.pathmeta.path_length == 0) {
 				cur_revf = hdr.revfs[0].revf;
 			}
@@ -415,6 +440,10 @@ control SwitchIngress(
 			if(cur_revf == hdr.sip.datahash) {
 				hdr.validation.svf = hdr.sip.svf;
 			}
+			else {
+				drop();
+				exit;
+			}
 
 			hdr.validation.svf = hdr.sip.svf;
 			hdr.path.push_front(1);
@@ -428,15 +457,10 @@ control SwitchIngress(
             	ipv4_lpm.apply();
         	}
 		}
+		// if the packet just came in from another device (need to be hashed)
 		else {
 			dfa_trans.apply();
-
-			hdr.sip.setValid();
-			hdr.sip.svf = hdr.validation.svf;
-			hdr.sip.datahash = hdr.validation.datahash;
-			hdr.sip.trans_id = ig_md.trans_id;
-			hdr.sip.timestamp = ig_intr_md.ingress_mac_tstamp;
-			ig_intr_tm_md.ucast_egress_port = 20;
+			to_hash.apply();
 		}
 	}
 }
