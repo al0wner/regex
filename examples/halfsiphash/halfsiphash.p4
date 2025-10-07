@@ -369,8 +369,10 @@ control SwitchIngress(
 
 			 #define ig_rule_incr_m(i) (i*4, SIP_PROTO): incr_and_recirc(i*4+2);
 			__LOOP(NUM_WORDS_IG, ig_rule_incr_m)
+
+			(0, SIP_2_PROTO): incr_and_recirc(2);
+			(4, SIP_2_PROTO): incr_and_recirc(6);
 			
-			// 마지막 round 처리
 			(NUM_WORDS*2, SIP_2_PROTO): do_not_recirc_end_in_eg(NUM_WORDS*2+2);
 			(NUM_WORDS*2, SIP_PROTO): incr_and_recirc(NUM_WORDS*2+2);
 		}
@@ -381,7 +383,6 @@ control SwitchIngress(
 		hdr.sip_meta.v_1 = key_1 ^ const_1;
 		hdr.sip_meta.v_2 = key_0 ^ const_2;
 		hdr.sip_meta.v_3 = key_1 ^ const_3;
-		hdr.sip_meta.revf_result = 0;
     }
 
         #define MSG_VAR_IG ig_md.sip_tmp.i_0
@@ -574,8 +575,6 @@ control SwitchIngress(
 		sip_init(SIP_KEY_0, SIP_KEY_1);
 
 		start_for_svf();
-
-		routing_decision();
 	}
 
 	apply {
