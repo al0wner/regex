@@ -14,7 +14,7 @@
 	./run_tofino_model.sh -p halfsiphash --arch tofino -t 8011 -P 8010
 	./run_switchd.sh -p halfsiphash --arch tofino --tcp-port-base 8011 --pd-api-port 9091 --switchd-listen-port 9998 --bfrt-grpc-port 50053
 	```
-### To listen to a veth@:  
+### To listen to veth@:  
 	`sudo tcpdump -i veth@ -nn -X`  
 
 ### To send a packet that must be hashed to veth@:  
