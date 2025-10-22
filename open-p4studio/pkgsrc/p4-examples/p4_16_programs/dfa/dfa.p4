@@ -414,7 +414,7 @@ control SwitchIngress(
 			send_to_hash;
 		}
 		size = 1;
-		default_action = send_to_hash(20);
+		default_action = send_to_hash(13);
 	}
 
 
