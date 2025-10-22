@@ -5,10 +5,12 @@ To apply the changes:
     
 
 To run two different Tofino simulations at a time:
-	1. Run the DFA device without default settings: 
+
+	1. Run the DFA device without default settings: 	
 	
 		`./run_tofino_model.sh -p dfa --arch tofino`  
 		`./run_switchd.sh -p dfa --arch tofino`
+		
 	2. Run the halfsiphash device with additional parameters: 
 	
 		`./run_tofino_model.sh -p halfsiphash --arch tofino -t 8011 -P 8010`
