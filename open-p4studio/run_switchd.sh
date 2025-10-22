@@ -43,6 +43,8 @@ function print_help() {
   echo "    Specify the base port number; default is 8081"
   echo "  --pd-api-port <port number>"
   echo "    Specify the port number for the PD API server; default is 9090"
+  echo "  --switchd-listen-port <port number>"
+  echo "    Specify the port number that switchd listens to; default is 9999"
   exit 0
 }
 
@@ -113,6 +115,7 @@ CHIP_ARCH="Tofino"
 SHELL_NO_WAIT=""
 TCP_PORT_BASE=8001
 PD_API_PORT=9090
+SWITCHD_LISTEN_PORT=9999
 while true; do
     case "$1" in
       -h) HELP=true; shift 1;;
@@ -124,6 +127,7 @@ while true; do
       -s) ASAN_ON_ERROR="ASAN_OPTIONS=halt_on_error=0"; shift 1;;
       -t|--tcp-port-base) TCP_PORT_BASE=$2; shift 2;;
       --pd-api-port) PD_API_PORT=$2; shift 2;;
+      --switchd-listen-port) SWITCHD_LISTEN_PORT=$2; shift 2;;
       --gdb-server) DBG="gdbserver :12345 "; shift 1;;
       --arch) CHIP_ARCH=$2; shift 2;;
       --skip-p4) SKIP_P4=true; shift 1;;
@@ -235,6 +239,6 @@ else
     "$SERVER_LISTEN_LOCAL_ONLY" \
 	--install-dir $SDE_INSTALL --conf-file $TARGET_CONFIG_FILE "--init-mode=$INIT_MODE" \
 	$SKIP_HLD_STR $SKIP_P4_STR $SKIP_PORT_ADD_STR $STS_PORT_STR $KERNEL_PKT_STR $SHELL_NO_WAIT \
-	--tcp-port-base $TCP_PORT_BASE --pd-api-port $PD_API_PORT \
+	--tcp-port-base $TCP_PORT_BASE --pd-api-port $PD_API_PORT --switchd-listen-port $SWITCHD_LISTEN_PORT \
 	$@
 fi

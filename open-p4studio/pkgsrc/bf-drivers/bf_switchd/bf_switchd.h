@@ -277,6 +277,9 @@ typedef struct bf_switchd_internal_context_t {
   void (*dru_sim_cpu_to_pcie_wr_fn)(bf_dev_id_t asic,
                                     uint32_t addr,
                                     uint32_t value);
+  
+  //switchd_listen port (originally 9999)
+  uint16_t switchd_listen_port;
 
 #ifdef STATIC_LINK_LIB
   bf_switchd_agent_init_fn_t bf_switchd_agent_init_fn;

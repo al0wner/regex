@@ -6260,7 +6260,7 @@ int bf_switchd_lib_init(bf_switchd_context_t *ctx) {
                                      switchd_ctx->args.running_in_background,
                                      switchd_ctx->args.shell_set_ucli,
                                      switchd_ctx->args.server_listen_local_only,
-                                     switchd_ctx->p4_devices
+                                     switchd_ctx->p4_devices,
                                      switchd_ctx->switchd_listen_port);
     if (sts != BF_SUCCESS) {
       bf_sys_log_and_trace(BF_MOD_SWITCHD,
