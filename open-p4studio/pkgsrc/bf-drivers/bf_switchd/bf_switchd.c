@@ -5773,6 +5773,7 @@ int bf_switchd_lib_init(bf_switchd_context_t *ctx) {
   bf_sys_mutex_init(&switchd_ctx->init_done_mutex);
 
   switchd_ctx->args.kernel_pkt = bf_switchd_is_kernel_pkt_module_present();
+  switchd_ctx->switchd_listen_port = ctx->switchd_listen_port;
 
   bf_switchd_init_dma_template(switchd_ctx->args.kernel_pkt);
 

@@ -45,6 +45,8 @@ function print_help() {
   echo "    Specify the port number for the PD API server; default is 9090"
   echo "  --switchd-listen-port <port number>"
   echo "    Specify the port number that switchd listens to; default is 9999"
+  echo "  --bfrt-grpc-port <port number>"
+  echo "    Specify the port number that bfruntime will use for grpc; default is 50052"
   exit 0
 }
 
@@ -88,7 +90,7 @@ echo "Using SDE ${SDE}"
 echo "Using SDE_INSTALL ${SDE_INSTALL}"
 
 #opts=$(getopt -o c:Cp:ghr:s --long no-status-srv,server-listen-local-only,gdb-server,skip-p4,skip-port-add,kernel-pkt,skip-hld:,status-port:,init-mode:,arch: -- "$@")
-opts=$(getopt -o c:Cp:ghr:st: --long no-status-srv,server-listen-local-only,gdb-server,skip-p4,skip-port-add,kernel-pkt,skip-hld:,status-port:,init-mode:,arch:,tcp-port-base:,pd-api-port: -- "$@")
+opts=$(getopt -o c:Cp:ghr:st: --long no-status-srv,server-listen-local-only,gdb-server,skip-p4,skip-port-add,kernel-pkt,skip-hld:,status-port:,init-mode:,arch:,tcp-port-base:,pd-api-port:,switchd-listen-port:,bfrt-grpc-port: -- "$@")
 
 if [ $? != 0 ]; then
   exit 1
@@ -116,6 +118,8 @@ SHELL_NO_WAIT=""
 TCP_PORT_BASE=8001
 PD_API_PORT=9090
 SWITCHD_LISTEN_PORT=9999
+BFRT_GRPC_PORT=50052
+
 while true; do
     case "$1" in
       -h) HELP=true; shift 1;;
@@ -128,6 +132,7 @@ while true; do
       -t|--tcp-port-base) TCP_PORT_BASE=$2; shift 2;;
       --pd-api-port) PD_API_PORT=$2; shift 2;;
       --switchd-listen-port) SWITCHD_LISTEN_PORT=$2; shift 2;;
+      --bfrt-grpc-port) BFRT_GRPC_PORT=$2; shift 2;;
       --gdb-server) DBG="gdbserver :12345 "; shift 1;;
       --arch) CHIP_ARCH=$2; shift 2;;
       --skip-p4) SKIP_P4=true; shift 1;;
@@ -232,7 +237,10 @@ if [[ $REDIRECTLOG != "" ]]; then
       "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" $DBG bf_switchd \
     "$SERVER_LISTEN_LOCAL_ONLY" \
 	--install-dir $SDE_INSTALL --conf-file $TARGET_CONFIG_FILE "--init-mode=$INIT_MODE" \
-	$SKIP_HLD_STR $SKIP_P4_STR $SKIP_PORT_ADD_STR $STS_PORT_STR $KERNEL_PKT_STR $SHELL_NO_WAIT $@ &> $REDIRECTLOG &
+	$SKIP_HLD_STR $SKIP_P4_STR $SKIP_PORT_ADD_STR $STS_PORT_STR $KERNEL_PKT_STR $SHELL_NO_WAIT \
+	--tcp-port-base $TCP_PORT_BASE --pd-api-port $PD_API_PORT --switchd-listen-port $SWITCHD_LISTEN_PORT \
+	--bfrt-grpc-port $BFRT_GRPC_PORT \
+	$@ &> $REDIRECTLOG &
 else
   sudo env "SDE=$SDE" "SDE_INSTALL=$SDE_INSTALL" $ASAN_ON_ERROR "PATH=$PATH" \
       "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" $DBG bf_switchd \
@@ -240,5 +248,6 @@ else
 	--install-dir $SDE_INSTALL --conf-file $TARGET_CONFIG_FILE "--init-mode=$INIT_MODE" \
 	$SKIP_HLD_STR $SKIP_P4_STR $SKIP_PORT_ADD_STR $STS_PORT_STR $KERNEL_PKT_STR $SHELL_NO_WAIT \
 	--tcp-port-base $TCP_PORT_BASE --pd-api-port $PD_API_PORT --switchd-listen-port $SWITCHD_LISTEN_PORT \
+	--bfrt-grpc-port $BFRT_GRPC_PORT \
 	$@
 fi
