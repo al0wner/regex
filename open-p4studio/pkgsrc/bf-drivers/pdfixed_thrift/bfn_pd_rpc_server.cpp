@@ -150,7 +150,7 @@ int start_bfn_pd_rpc_server(void **server_cookie, bool is_local_only, uint16_t p
   pthread_mutex_init(&cookie_mutex, NULL);
   pthread_cond_init(&cookie_cv, NULL);
 
-  std::cerr << "Starting PD-API RPC server on port " << BFN_PD_RPC_SERVER_PORT
+  std::cerr << "Starting PD-API RPC server on port " << pd_api_port
             << std::endl;
 
   *server_cookie = NULL;

@@ -1,0 +1,125 @@
+digraph ingress {
+cond_7 [ shape=record, style="filled", fillcolor=cornsilk, label="hdr.sip.$valid == 1\l\l
+ "];
+cond_8 [ shape=record, style="filled", fillcolor=cornsilk, label="hdr.pathmeta.path_length == 0\l\l
+ "];
+dfa_trans_0 [ shape=record, style="filled", fillcolor=cornsilk, label="dfa_trans_0\l\l
+M:\l
+ hdr.validation.dfa_id\l
+ hdr.validation.dfa_state\l
+\lW:\l
+ hdr.validation.dfa_state\l
+ ig_md.trans_id\l
+ "];
+tbl_dfa428 [ shape=record, style="filled", fillcolor=cornsilk, label="tbl_dfa428\l\l
+R:\l
+ hdr.revfs[0].revf\l
+\lW:\l
+ cur_revf_0\l
+ "];
+cond_9 [ shape=record, style="filled", fillcolor=cornsilk, label="hdr.pathmeta.path_length == 1\l\l
+ "];
+cond_11 [ shape=record, style="filled", fillcolor=cornsilk, label="cur_revf_0 == hdr.sip.datahash\l\l
+ "];
+tbl_dfa431 [ shape=record, style="filled", fillcolor=cornsilk, label="tbl_dfa431\l\l
+R:\l
+ hdr.revfs[1].revf\l
+\lW:\l
+ cur_revf_0\l
+ "];
+cond_10 [ shape=record, style="filled", fillcolor=cornsilk, label="hdr.pathmeta.path_length == 2\l\l
+ "];
+tbl_dfa434 [ shape=record, style="filled", fillcolor=cornsilk, label="tbl_dfa434\l\l
+R:\l
+ hdr.revfs[2].revf\l
+\lW:\l
+ cur_revf_0\l
+ "];
+tbl_dfa448 [ shape=record, style="filled", fillcolor=cornsilk, label="tbl_dfa448\l\l
+R:\l
+ hdr.sip.svf\l
+ hdr.path[6].transition_id\l
+ hdr.path[5].transition_id\l
+ hdr.path[4].transition_id\l
+ hdr.path[3].transition_id\l
+ hdr.path[2].transition_id\l
+ hdr.path[1].transition_id\l
+ hdr.path[0].transition_id\l
+ hdr.path.$stkvalid\l
+ hdr.sip.trans_id_mem\l
+ hdr.pathmeta.path_length\l
+ hdr.ipv4.total_len\l
+\lW:\l
+ hdr.validation.svf\l
+ hdr.path[7].transition_id\l
+ hdr.path[6].transition_id\l
+ hdr.path[5].transition_id\l
+ hdr.path[4].transition_id\l
+ hdr.path[3].transition_id\l
+ hdr.path[2].transition_id\l
+ hdr.path[1].transition_id\l
+ hdr.path.$stkvalid\l
+ hdr.path[0].transition_id\l
+ hdr.pathmeta.path_length\l
+ hdr.ipv4.total_len\l
+ hdr.sip.$valid\l
+ "];
+tbl_drop [ shape=record, style="filled", fillcolor=cornsilk, label="tbl_drop\l\l
+W:\l
+ ig_intr_md_for_dprsr.drop_ctl\l
+ "];
+cond_12 [ shape=record, style="filled", fillcolor=cornsilk, label="hdr.ipv4.$valid == 1\l\l
+ "];
+ipv4_lpm_0 [ shape=record, style="filled", fillcolor=cornsilk, label="ipv4_lpm_0\l\l
+M:\l
+ hdr.ipv4.dst_addr\l
+\lR:\l
+ hdr.ipv4.ttl\l
+ hdr.ethernet.dst_addr\l
+\lW:\l
+ ig_intr_md_for_tm.ucast_egress_port\l
+ hdr.ipv4.ttl\l
+ hdr.ethernet.src_addr\l
+ hdr.ethernet.dst_addr\l
+ ig_intr_md_for_dprsr.drop_ctl\l
+ "];
+tbl_dfa445 [ shape=record, style="filled", fillcolor=cornsilk, label="tbl_dfa445\l\l
+ "];
+to_hash_0 [ shape=record, style="filled", fillcolor=cornsilk, label="to_hash_0\l\l
+R:\l
+ hdr.validation.svf\l
+ hdr.validation.datahash\l
+ ig_md.trans_id\l
+ ig_intr_md.ingress_mac_tstamp\l
+\lW:\l
+ hdr.sip.$valid\l
+ hdr.sip.svf\l
+ hdr.sip.datahash\l
+ hdr.sip.trans_id\l
+ hdr.sip.timestamp\l
+ ig_intr_md_for_tm.ucast_egress_port\l
+ "];
+    PARSER -> cond_7
+    cond_7 -> cond_8
+    PARSER -> cond_7
+    cond_7 -> dfa_trans_0
+    cond_8 -> tbl_dfa428
+    cond_8 -> cond_9
+    tbl_dfa428 -> cond_11
+    cond_9 -> tbl_dfa431
+    cond_9 -> cond_10
+    tbl_dfa431 -> cond_11
+    cond_10 -> tbl_dfa434
+    cond_10 -> cond_11
+    tbl_dfa434 -> cond_11
+    cond_11 -> tbl_dfa448
+    cond_11 -> tbl_drop
+    tbl_dfa448 -> cond_12
+    cond_12 -> ipv4_lpm_0
+    cond_12 -> DEPARSER
+    ipv4_lpm_0 -> DEPARSER
+    tbl_drop -> tbl_dfa445
+    tbl_dfa445 -> DEPARSER
+    dfa_trans_0 -> to_hash_0
+    to_hash_0 -> DEPARSER
+}

@@ -119,7 +119,7 @@ static void bf_switchd_parse_options(bf_switchd_context_t *ctx,
         {"p4rt-server", required_argument, 0, OPT_P4RT_SERVER},
         {"shell-no-wait", no_argument, 0, OPT_SHELL_NO_WAIT},
         {"pd-api-port", required_argument, 0, OPT_PD_API_PORT},
-        {"switchd-listen-port", required_argument, 0, OPT_SWITCHD_LISTEN_PORT}
+        {"switchd-listen-port", required_argument, 0, OPT_SWITCHD_LISTEN_PORT},
         {0, 0, 0, 0}};
     int c = getopt_long(argc, argv, "h", long_options, &option_index);
     if (c == -1) {

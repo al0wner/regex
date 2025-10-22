@@ -4063,7 +4063,8 @@ static bf_status_t bf_switchd_drv_shell_start(char *install_dir,
                                               bool run_background,
                                               bool run_ucli,
                                               bool local_only,
-                                              p4_devices_t *p4_devices) {
+                                              p4_devices_t *p4_devices,
+                                              uint16_t switchd_listen_port) {
   bf_status_t ret = BF_SUCCESS;
 
   /* Note that the CLI thread is responsible for free-ing this data */
@@ -4081,7 +4082,7 @@ static bf_status_t bf_switchd_drv_shell_start(char *install_dir,
   bf_sys_log_and_trace(
       BF_MOD_SWITCHD, BF_LOG_DBG, "bf_switchd: spawning cli server thread");
   snprintf(install_dir_path, 1023, "%s/", install_dir);
-  cli_thread_main(install_dir_path, p4_names, local_only);
+  cli_thread_main(install_dir_path, p4_names, local_only, switchd_listen_port);
 
   if (!run_background) {
     bf_sys_log_and_trace(
@@ -4107,7 +4108,8 @@ static bf_status_t bf_switchd_drv_shell_start(char *install_dir,
   }
   bf_sys_log_and_trace(BF_MOD_SWITCHD,
                        BF_LOG_DBG,
-                       "bf_switchd: server started - listening on port 9999");
+                       "bf_switchd: server started - listening on port %d", 
+                       switchd_listen_port);
 
   return ret;
 }
@@ -6142,7 +6144,8 @@ int bf_switchd_lib_init(bf_switchd_context_t *ctx) {
                                      switchd_ctx->args.running_in_background,
                                      switchd_ctx->args.shell_set_ucli,
                                      switchd_ctx->args.server_listen_local_only,
-                                     switchd_ctx->p4_devices);
+                                     switchd_ctx->p4_devices,
+                                     switchd_ctx->switchd_listen_port);
     if (sts != BF_SUCCESS) {
       bf_sys_log_and_trace(BF_MOD_SWITCHD,
                            BF_LOG_ERR,
@@ -6257,7 +6260,8 @@ int bf_switchd_lib_init(bf_switchd_context_t *ctx) {
                                      switchd_ctx->args.running_in_background,
                                      switchd_ctx->args.shell_set_ucli,
                                      switchd_ctx->args.server_listen_local_only,
-                                     switchd_ctx->p4_devices);
+                                     switchd_ctx->p4_devices
+                                     switchd_ctx->switchd_listen_port);
     if (sts != BF_SUCCESS) {
       bf_sys_log_and_trace(BF_MOD_SWITCHD,
                            BF_LOG_ERR,
