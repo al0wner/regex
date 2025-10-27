@@ -462,6 +462,7 @@ control SwitchIngress(
 			dfa_trans.apply();
 			to_hash.apply();
 		}
+		ig_intr_tm_md.bypass_egress = 1w1; // bypass egress
 	}
 }
 

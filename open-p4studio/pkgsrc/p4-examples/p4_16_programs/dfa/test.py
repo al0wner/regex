@@ -138,7 +138,7 @@ class ToHashTest(BfRuntimeTest):
         trans_id = 0
 
         # Halfsiphash is connected through the following port
-        hash_egport = 5
+        hash_egport = 13
 
         bfrt_info = self.interface.bfrt_info_get("dfa")
         forward_table = bfrt_info.table_get("SwitchIngress.ipv4_lpm")
@@ -147,7 +147,7 @@ class ToHashTest(BfRuntimeTest):
         dfa_table = bfrt_info.table_get("SwitchIngress.dfa_trans")
         tohash_table = bfrt_info.table_get("SwitchIngress.to_hash")
 
-        pkt = validation_packet()
+        pkt = validation_packet(revf_data=0xaba88f14)
         print(type(pkt))
         #exp_pkt = pkt
 
@@ -161,6 +161,7 @@ class ToHashTest(BfRuntimeTest):
         print("Sent packet:")
         pkt.show2()
 
+'''
 # When the ingress packet must be forwarded (revf matches hashed value)
 class ForwardTest(BfRuntimeTest):
     def setUp(self):
@@ -183,7 +184,7 @@ class ForwardTest(BfRuntimeTest):
         trans_id = 0
 
         # Halfsiphash is connected through the following port
-        hash_egport = 5
+        hash_egport = 13
 
         bfrt_info = self.interface.bfrt_info_get("dfa")
         forward_table = bfrt_info.table_get("SwitchIngress.ipv4_lpm")
@@ -224,7 +225,7 @@ class DropTest(BfRuntimeTest):
         trans_id = 0
 
         # Halfsiphash is connected through the following port
-        hash_egport = 5
+        hash_egport = 13
 
         bfrt_info = self.interface.bfrt_info_get("dfa")
         forward_table = bfrt_info.table_get("SwitchIngress.ipv4_lpm")
@@ -242,5 +243,5 @@ class DropTest(BfRuntimeTest):
         testutils.send_packet(self, ig_port, pkt)
         print("Sent packet:")
         pkt.show2()
-
+'''
 

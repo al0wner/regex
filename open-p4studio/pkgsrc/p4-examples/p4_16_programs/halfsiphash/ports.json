@@ -7,8 +7,8 @@
         },
         {
             "device_port":1,
-            "veth1":36,
-            "veth2":37
+            "veth1":27,
+            "veth2":26
         },
         {
             "device_port":2,
