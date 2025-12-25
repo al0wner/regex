@@ -34,15 +34,17 @@
 */
 
 // validation stuff
-#define SVF_LENGTH 32    
+#define SVF_LENGTH 32
+#define REVF_LENGTH 32
 #define KEY_LENGTH 32
-
-#define DFA_COUNT_BITS 8  // How many different DFAs can we define?
-#define DFA_STATE_BITS 8  // How many bits do we need to represent the current state?
-#define TRANS_ID_BITS 16 // How many bits do we need to represent each transition within a DFA?
-#define BITVEC_SIZE 64
+#define TRANS_ID_BITS 16
+#define DFA_STATE_BITS 8
+#define DATAHASH_LENGTH 32
+#define TRANS_LENGTH 32
+#define MAX_REVF_LENGTH 8  // need to cut parse bytes
+#define MAX_PATH_LENGTH 8
 #define TIMESTAMP_LENGTH 48
-
+#define REVF_INPUT_LENGTH 120
 
 #define TYPE_IPV4 0x800
 #define VALIDATION_PROTO 0xF0
@@ -70,19 +72,25 @@ const ip_protocol_t IP_PROTOCOLS_TCP = 6;
 const ip_protocol_t IP_PROTOCOLS_UDP = 17;
 
 
+header revf_t {
+    bit<REVF_LENGTH> revf;
+}
+
+header path_t {
+    bit<TRANS_ID_BITS> transition_id;
+}
+
+header path_meta_t {
+    bit<8> path_length;
+}
 
 header validation_h {
-    bit<48> timestamp;   // to prevent replay attack
-    bit<SVF_LENGTH> svf; // sequential hash
-    bit<DFA_COUNT_BITS> dfa_id;		 // used when there are multiple instances of DFAs for different ECs
+    bit<8> dfa_id;
     bit<DFA_STATE_BITS> dfa_state;
+    bit<8> revf_length;
+    bit<DATAHASH_LENGTH> datahash;
+    bit<SVF_LENGTH> svf;
     
-    //The total size of the following fields is dependent on the size of DFA_STATE_BITS (2^DFA_STATE_BITS total)
-    bit<BITVEC_SIZE> bitvec_1;
-    bit<BITVEC_SIZE> bitvec_2;
-    bit<BITVEC_SIZE> bitvec_3;
-    bit<BITVEC_SIZE> bitvec_4;
-	/////////////////////////////////////////////////////
 }
 
 header ethernet_h {
@@ -126,13 +134,13 @@ header udp_h {
 	bit<16> checksum;
 }
 
-header sip_h {
-	// hash_i = MAC_{k_i} (timestamp || DFA_id || transition_id || hash_i )
+header sip_inout_h {
 	bit<SVF_LENGTH> svf;
-	bit<DFA_COUNT_BITS> dfa_id;
+	bit<DATAHASH_LENGTH> datahash;
 	bit<TRANS_ID_BITS> trans_id;
 	bit<48> timestamp;
-	bit<16> orig_eg_port;
+	bit<16> eg_port;
+	bit<TRANS_ID_BITS> trans_id_mem;
 }
 
 struct ig_metadata_t {
@@ -149,6 +157,12 @@ struct header_t {
 	ipv4_h ipv4;
 	sip_inout_h sip;
 	validation_h validation;
+    revf_t[MAX_REVF_LENGTH] revfs;
+    path_meta_t pathmeta;
+    path_t[MAX_PATH_LENGTH] path;
+
+	//tcp_h tcp;
+	//udp_h udp;    
 }
 
 
@@ -202,12 +216,70 @@ parser SwitchIngressParser(
         
         transition select(hdr.ipv4.protocol) {
             VALIDATION_PROTO: parse_validation;
+			SIP_2_PROTO: parse_sip;
             default: accept;
             
         }
     }
+
+	state parse_sip {
+		pkt.extract(hdr.sip);
+		transition parse_validation;
+	}
     
     state parse_validation {
+        pkt.extract(hdr.validation);
+        transition select(hdr.validation.revf_length) {
+            0: parse_path_meta;
+            default: parse_revfs_1;
+        }
+    }
+    
+    state parse_revfs_1 {
+        pkt.extract(hdr.revfs.next);
+        transition select(hdr.validation.revf_length) {
+            1: parse_path_meta;
+            default: parse_revfs_2;
+        }
+    }
+    state parse_revfs_2 {
+        pkt.extract(hdr.revfs.next);
+        transition select(hdr.validation.revf_length) {
+            2: parse_path_meta;
+            default: parse_revfs_3;
+        }
+    }
+    state parse_revfs_3 {
+        pkt.extract(hdr.revfs.next);
+        transition accept;
+    }
+
+    
+    state parse_path_meta {
+        pkt.extract(hdr.pathmeta);
+        transition select(hdr.pathmeta.path_length) {
+            0: accept;
+            default: parse_path_1;
+        }
+    }
+    
+    state parse_path_1 {
+        pkt.extract(hdr.path.next);
+        transition select(hdr.pathmeta.path_length) {
+            1: accept;
+            default: parse_path_2;
+        }
+    }
+    state parse_path_2 {
+        pkt.extract(hdr.path.next);
+        transition select(hdr.pathmeta.path_length) {
+            2: accept;
+            default: parse_path_3;
+        }
+    }
+
+    state parse_path_3 {
+        pkt.extract(hdr.path.next);
         transition accept;
     }
 }
@@ -224,6 +296,9 @@ control SwitchIngressDeparser(
 		pkt.emit(hdr.ipv4);
 		pkt.emit(hdr.sip);
 		pkt.emit(hdr.validation);
+		pkt.emit(hdr.revfs);
+        pkt.emit(hdr.pathmeta);
+        pkt.emit(hdr.path);
 	}
 }
 
@@ -248,6 +323,18 @@ control SwitchEgressDeparser(
 		pkt.emit(hdr.ipv4);
 		pkt.emit(hdr.sip);
 		pkt.emit(hdr.validation);
+		pkt.emit(hdr.revfs);
+        pkt.emit(hdr.pathmeta);
+        pkt.emit(hdr.path);
+        /*
+        pkt.emit(hdr.whattodo);
+        pkt.emit(hdr.hash_stage);
+		pkt.emit(hdr.sip);
+		pkt.emit(hdr.sip_meta);
+        pkt.emit(hdr.tcp);
+		pkt.emit(hdr.udp);
+		*/
+		
 	}
 }
 
@@ -260,6 +347,7 @@ control SwitchIngress(
 		inout ingress_intrinsic_metadata_for_deparser_t ig_intr_dprsr_md,
 		inout ingress_intrinsic_metadata_for_tm_t ig_intr_tm_md) {
 
+	bit<REVF_LENGTH> cur_revf;
 
 	action drop(){
 		ig_intr_dprsr_md.drop_ctl = 0x1; // Drop packet.
@@ -294,26 +382,10 @@ control SwitchIngress(
 
 	
 	action dfa_transition(bit<DFA_STATE_BITS> state, bit<TRANS_ID_BITS> transition_id) {
-            
-			hdr.validation.dfa_state = state;
-			ig_md.trans_id = transition_id;
+            hdr.validation.dfa_state = state;
+            ig_md.trans_id = transition_id;
     }
-
-
-	action mark_bitvec_1(bit<BITVEC_SIZE> statebit) {
-		hdr.validation.bitvec_1 = hdr.validation.bitvec_1 | statebit;
-	}
-	action mark_bitvec_2(bit<BITVEC_SIZE> statebit) {
-		hdr.validation.bitvec_2 = hdr.validation.bitvec_2 | statebit;
-	}
-	action mark_bitvec_3(bit<BITVEC_SIZE> statebit) {
-		hdr.validation.bitvec_3 = hdr.validation.bitvec_3 | statebit;
-	}
-	action mark_bitvec_4(bit<BITVEC_SIZE> statebit) {
-		hdr.validation.bitvec_4 = hdr.validation.bitvec_4 | statebit;
-	}
     
-
     table dfa_trans {
         key = {
             hdr.validation.dfa_id: exact;
@@ -327,69 +399,12 @@ control SwitchIngress(
         default_action = NoAction();
     }
 
-	table bitvec1 {
-		key = {
-			hdr.validation.dfa_id: exact;
-			ig_md.trans_id: exact;
-		}
-
-		actions = {
-			mark_bitvec_1;
-			NoActions;
-		}
-		size = 512;
-		default_action = NoAction();
-	}
-
-	table bitvec2 {
-		key = {
-			hdr.validation.dfa_id: exact;
-			ig_md.trans_id: exact;
-		}
-
-		actions = {
-			mark_bitvec_2;
-			NoActions;
-		}
-		size = 512;
-		default_action = NoAction();
-	}
-
-	table bitvec3 {
-		key = {
-			hdr.validation.dfa_id: exact;
-			ig_md.trans_id: exact;
-		}
-
-		actions = {
-			mark_bitvec_3;
-			NoActions;
-		}
-		size = 512;
-		default_action = NoAction();
-	}
-
-	table bitvec4 {
-		key = {
-			hdr.validation.dfa_id: exact;
-			ig_md.trans_id: exact;
-		}
-
-		actions = {
-			mark_bitvec_4;
-			NoActions;
-		}
-		size = 512;
-		default_action = NoAction();
-	}
-
 	action send_to_hash(bit<9> eg_port) {
 		hdr.sip.setValid();
 		hdr.sip.svf = hdr.validation.svf;
-		hdr.sip.dfa_id = hdr.validation.dfa_id;
+		hdr.sip.datahash = hdr.validation.datahash;
 		hdr.sip.trans_id = ig_md.trans_id;
-		hdr.sip.timestamp = hdr.validation.timestamp;
-		hdr.sip.orig_eg_port = (bit<16>)ig_intr_tm_md.ucast_egress_port;
+		hdr.sip.timestamp = ig_intr_md.ingress_mac_tstamp;
 		ig_intr_tm_md.ucast_egress_port = eg_port;
 	}
 
@@ -404,19 +419,50 @@ control SwitchIngress(
 
 
 	apply {
-		dfa_trans.apply();
+		// if the packet came back after hashing
+		if (hdr.sip.isValid()) {
+			
+			//TODO: extend this to cover longer path length
 
-		bitvec1.apply();
-		bitvec2.apply();
-		bitvec3.apply();
-		bitvec4.apply();
+			if (hdr.pathmeta.path_length == 0) {
+				cur_revf = hdr.revfs[0].revf;
+			}
+			else if (hdr.pathmeta.path_length == 1) {
+				cur_revf = hdr.revfs[1].revf;
+			}
+			else if (hdr.pathmeta.path_length == 2) {
+				cur_revf = hdr.revfs[2].revf;
+			}
+			else{
+				cur_revf = 0;
+			}
 
-		ipv4_forward.apply();
+			if(cur_revf == hdr.sip.datahash) {
+				hdr.validation.svf = hdr.sip.svf;
+			}
+			else {
+				drop();
+				exit;
+			}
 
-		if(ig_intr_dprsr_md.drop_ctl == 0)
+			hdr.validation.svf = hdr.sip.svf;
+			hdr.path.push_front(1);
+            hdr.path[0].setValid();
+            hdr.path[0].transition_id = hdr.sip.trans_id_mem;
+			hdr.pathmeta.path_length = hdr.pathmeta.path_length + 1;
+			hdr.ipv4.total_len = hdr.ipv4.total_len + 1;
+			hdr.sip.setInvalid();
+
+			if (hdr.ipv4.isValid()) {
+            	ipv4_lpm.apply();
+        	}
+		}
+		// if the packet just came in from another device (need to be hashed)
+		else {
+			dfa_trans.apply();
 			to_hash.apply();
-		
-		//ig_intr_tm_md.bypass_egress = 1w1; // bypass egress
+		}
+		ig_intr_tm_md.bypass_egress = 1w1; // bypass egress
 	}
 }
 
