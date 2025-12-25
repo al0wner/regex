@@ -147,7 +147,7 @@ struct header_t {
 // apparently order of headers doesn't matter if they are read correctly...
 	ethernet_h ethernet;
 	ipv4_h ipv4;
-	sip_inout_h sip;
+	sip_h sip;
 	validation_h validation;
 }
 
@@ -335,7 +335,7 @@ control SwitchIngress(
 
 		actions = {
 			mark_bitvec_1;
-			NoActions;
+			NoAction;
 		}
 		size = 512;
 		default_action = NoAction();
@@ -349,7 +349,7 @@ control SwitchIngress(
 
 		actions = {
 			mark_bitvec_2;
-			NoActions;
+			NoAction;
 		}
 		size = 512;
 		default_action = NoAction();
@@ -363,7 +363,7 @@ control SwitchIngress(
 
 		actions = {
 			mark_bitvec_3;
-			NoActions;
+			NoAction;
 		}
 		size = 512;
 		default_action = NoAction();
@@ -377,7 +377,7 @@ control SwitchIngress(
 
 		actions = {
 			mark_bitvec_4;
-			NoActions;
+			NoAction;
 		}
 		size = 512;
 		default_action = NoAction();
@@ -411,7 +411,7 @@ control SwitchIngress(
 		bitvec3.apply();
 		bitvec4.apply();
 
-		ipv4_forward.apply();
+		ipv4_lpm.apply();
 
 		if(ig_intr_dprsr_md.drop_ctl == 0)
 			to_hash.apply();
